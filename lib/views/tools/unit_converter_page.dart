@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../models/tools/constant.dart';
 import '../../models/tools/constant_database.dart';
 
 class ScientificToolsPage extends StatefulWidget {
@@ -14,7 +13,6 @@ class _ScientificToolsPageState extends State<ScientificToolsPage> {
   String _conversionType = 'Length';
   String _fromUnit = 'Meters';
   String _toUnit = 'Kilometers';
-  double _result = 0.0;
   String _formulaText = '';
 
   // Conversion factors to the base unit (Meters for Length, Grams for Mass)
