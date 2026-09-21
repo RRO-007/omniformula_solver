@@ -20,7 +20,7 @@ class _MathSolverPageState extends State<MathSolverPage> {
     double c = double.tryParse(_cController.text) ?? 0.0;
 
     List<String> newSteps = [];
-    newSteps.add("Equation: ${a}x² + ${b}x + ${c} = 0");
+    newSteps.add("Equation: $a x² + $b x + $c = 0");
     newSteps.add("Step 1: Identify the coefficients: a = $a, b = $b, c = $c");
 
     if (a == 0) {

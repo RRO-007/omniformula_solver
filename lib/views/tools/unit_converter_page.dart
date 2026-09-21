@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../models/constant.dart';
-import '../models/constant_database.dart';
+import '../../models/tools/constant.dart';
+import '../../models/tools/constant_database.dart';
 
 class ScientificToolsPage extends StatefulWidget {
   const ScientificToolsPage({super.key});
@@ -46,7 +46,6 @@ class _ScientificToolsPageState extends State<ScientificToolsPage> {
     double finalValue = baseValue / toFactor;
 
     setState(() {
-      _result = finalValue;
       _formulaText = '$input $_fromUnit = ${finalValue.toStringAsFixed(4)} $_toUnit';
     });
   }

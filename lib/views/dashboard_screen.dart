@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'physics_solver_page.dart';
 import 'math_solver_page.dart';
-import 'periodic_table_page.dart';
-import 'unit_converter_page.dart';
+import 'physics/physics_solver_page.dart';
+import 'chemistry/periodic_table_page.dart';
+import 'tools/unit_converter_page.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../models/element.dart';
-import '../models/element_database.dart';
+import '../../models/chemistry/element.dart';
+import '../../models/chemistry/element_database.dart';
 
 class PeriodicTablePage extends StatelessWidget {
   const PeriodicTablePage({super.key});

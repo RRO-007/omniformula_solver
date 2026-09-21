@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-
-import '../controllers/solver_engine.dart';
-import '../models/formula.dart';
-import '../models/formula_database.dart';
+import '../../controllers/solver_engine.dart';
+import '../../models/formula.dart';
+import '../../models/physics/formula_database.dart';
 
 class PhysicsSolverPage extends StatefulWidget {
   const PhysicsSolverPage({super.key});
