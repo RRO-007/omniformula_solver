@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'math_solver_page.dart';
 import 'physics/physics_solver_page.dart';
-import 'chemistry/periodic_table_page.dart';
+import 'chemistry/chemistry_solver_page.dart';
 import 'tools/unit_converter_page.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -18,7 +18,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   final List<Widget> _pages = [
     const MathSolverPage(),
     const PhysicsSolverPage(),
-    const PeriodicTablePage(),
+    const ChemistryPage(),
     const ScientificToolsPage(),
   ];
 
