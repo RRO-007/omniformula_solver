@@ -5,7 +5,6 @@ class SolverEngine {
   List<String> solve(Formula formula, String targetVariable, Map<String, double> knownValues) {
     List<String> steps = [];
     
-    // Check if the answer is already known
     if (knownValues.containsKey(targetVariable)) {
       steps.add("The variable $targetVariable is already known: ${knownValues[targetVariable]}");
       return steps;
@@ -15,15 +14,19 @@ class SolverEngine {
     steps.add("Step 1: Identify the unknown variable: $targetVariable");
     steps.add("Step 2: Rearrange the formula: $equationString");
 
-    // Substitute known values into the equation
+    // CRITICAL FIX: Sort variables longest-first, and use word boundaries
+    // so 's' doesn't replace the 's' inside 'sqrt()'.
     String substitutedEquation = equationString;
-    knownValues.forEach((key, value) {
-      substitutedEquation = substitutedEquation.replaceAll(key, value.toString());
-    });
+    final sortedEntries = knownValues.entries.toList()
+      ..sort((a, b) => b.key.length.compareTo(a.key.length));
+
+    for (var entry in sortedEntries) {
+      final regex = RegExp('\\b${entry.key}\\b');
+      substitutedEquation = substitutedEquation.replaceAll(regex, entry.value.toString());
+    }
 
     steps.add("Step 3: Substitute known values: $substitutedEquation");
 
-    // Evaluate the expression using the math_expressions package
     try {
       GrammarParser p = GrammarParser();
       Expression exp = p.parse(substitutedEquation);
