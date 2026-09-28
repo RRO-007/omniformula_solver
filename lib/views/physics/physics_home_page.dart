@@ -11,7 +11,7 @@ class PhysicsHomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // We will combine all physics formulas for now to create categories
+    // Combine all physics formulas
     final allFormulas = [
       ...FormulaDatabase.physicsFormulas,
       ...HscPhysics1Database.hscPhysics1Formulas,
@@ -37,7 +37,7 @@ class PhysicsHomePage extends StatelessWidget {
       },
       {'name': 'Optics', 'icon': Icons.light_mode, 'color': Colors.amber},
       {'name': 'Modern Physics', 'icon': Icons.science, 'color': Colors.cyan},
-      {'name': 'Nuclear', 'icon': Icons.radioactive, 'color': Colors.green},
+      {'name': 'Nuclear', 'icon': Icons.warning_amber, 'color': Colors.green},
       {'name': 'Fluids', 'icon': Icons.water, 'color': Colors.lightBlue},
       {'name': 'Astronomy', 'icon': Icons.star, 'color': Colors.pink},
     ];
@@ -61,7 +61,7 @@ class PhysicsHomePage extends StatelessWidget {
               cat['name'] as String,
               cat['icon'] as IconData,
               cat['color'] as Color,
-              allFormulas, // Pass all formulas, we can filter inside the next screen
+              allFormulas,
             );
           },
         ),
@@ -92,9 +92,10 @@ class PhysicsHomePage extends StatelessWidget {
       borderRadius: BorderRadius.circular(20),
       child: Container(
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          // Updated from withOpacity to withValues
+          color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: color.withOpacity(0.3), width: 2),
+          border: Border.all(color: color.withValues(alpha: 0.3), width: 2),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
