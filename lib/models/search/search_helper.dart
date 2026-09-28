@@ -1,5 +1,6 @@
 import '../physics/formula_database.dart';
 import '../physics/hsc_physics1_database.dart';
+import '../physics/hsc_physics2_database.dart';
 import '../math/geometry_formula_database.dart';
 import '../chemistry/chemistry_formula_database.dart';
 import '../tools/constant_database.dart';
@@ -30,6 +31,12 @@ class SearchHelper {
     }
 
     for (var f in HscPhysics1Database.hscPhysics1Formulas) {
+      if (f.name.toLowerCase().contains(lowerQuery)) {
+        results.add(SearchResult(f.name, 'Physics'));
+      }
+    }
+
+    for (var f in HscPhysics2Database.hscPhysics2Formulas) {
       if (f.name.toLowerCase().contains(lowerQuery)) {
         results.add(SearchResult(f.name, 'Physics'));
       }

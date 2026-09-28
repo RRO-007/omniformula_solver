@@ -4,6 +4,7 @@ import '../../controllers/solver_engine.dart';
 import '../../models/formula.dart';
 import '../../models/physics/formula_database.dart';
 import '../../models/physics/hsc_physics1_database.dart';
+import '../../models/physics/hsc_physics2_database.dart';
 
 class PhysicsSolverPage extends StatelessWidget {
   const PhysicsSolverPage({super.key});
@@ -11,7 +12,7 @@ class PhysicsSolverPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Physics'),
@@ -20,6 +21,7 @@ class PhysicsSolverPage extends StatelessWidget {
             tabs: [
               Tab(text: 'General'),
               Tab(text: 'HSC 1st Paper'),
+              Tab(text: 'HSC 2nd Paper'),
             ],
           ),
         ),
@@ -32,6 +34,10 @@ class PhysicsSolverPage extends StatelessWidget {
             FormulaSolver(
               formulas: HscPhysics1Database.hscPhysics1Formulas,
               hubName: 'HSC Physics 1st Paper',
+            ),
+            FormulaSolver(
+              formulas: HscPhysics2Database.hscPhysics2Formulas,
+              hubName: 'HSC Physics 2nd Paper',
             ),
           ],
         ),
