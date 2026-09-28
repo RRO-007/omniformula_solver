@@ -146,7 +146,7 @@ class _MatrixCalculatorPageState extends State<MatrixCalculatorPage> {
               _result = '';
             }),
             items: [2, 3]
-                .map((s) => DropdownMenuItem(value: s, child: Text('${s}×$s')))
+                .map((s) => DropdownMenuItem(value: s, child: Text('$s×$s')))
                 .toList(),
           ),
           const SizedBox(height: 16),

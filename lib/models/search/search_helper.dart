@@ -3,6 +3,7 @@ import '../physics/hsc_physics1_database.dart';
 import '../physics/hsc_physics2_database.dart';
 import '../math/geometry_formula_database.dart';
 import '../chemistry/chemistry_formula_database.dart';
+import '../chemistry/hsc_chem1_database.dart';
 import '../tools/constant_database.dart';
 import '../math/math_formula_database.dart';
 
@@ -49,6 +50,12 @@ class SearchHelper {
     }
 
     for (var f in ChemistryFormulaDatabase.chemistryFormulas) {
+      if (f.name.toLowerCase().contains(lowerQuery)) {
+        results.add(SearchResult(f.name, 'Chemistry'));
+      }
+    }
+
+    for (var f in HscChem1Database.hscChem1Formulas) {
       if (f.name.toLowerCase().contains(lowerQuery)) {
         results.add(SearchResult(f.name, 'Chemistry'));
       }
