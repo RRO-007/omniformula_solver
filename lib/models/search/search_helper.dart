@@ -1,9 +1,9 @@
-import '../formula.dart';
 import '../physics/formula_database.dart';
+import '../physics/hsc_physics1_database.dart';
 import '../math/geometry_formula_database.dart';
 import '../chemistry/chemistry_formula_database.dart';
-import '../tools/constant.dart';
 import '../tools/constant_database.dart';
+import '../math/math_formula_database.dart';
 
 class SearchResult {
   final String name;
@@ -17,26 +17,45 @@ class SearchHelper {
     final lowerQuery = query.toLowerCase();
     List<SearchResult> results = [];
 
+    for (var f in MathFormulaDatabase.mathFormulas) {
+      if (f.name.toLowerCase().contains(lowerQuery)) {
+        results.add(SearchResult(f.name, 'Math'));
+      }
+    }
+
     for (var f in FormulaDatabase.physicsFormulas) {
       if (f.name.toLowerCase().contains(lowerQuery)) {
         results.add(SearchResult(f.name, 'Physics'));
       }
     }
+
+    for (var f in HscPhysics1Database.hscPhysics1Formulas) {
+      if (f.name.toLowerCase().contains(lowerQuery)) {
+        results.add(SearchResult(f.name, 'Physics'));
+      }
+    }
+
     for (var f in GeometryFormulaDatabase.geometryFormulas) {
       if (f.name.toLowerCase().contains(lowerQuery)) {
         results.add(SearchResult(f.name, 'Math'));
       }
     }
+
     for (var f in ChemistryFormulaDatabase.chemistryFormulas) {
       if (f.name.toLowerCase().contains(lowerQuery)) {
         results.add(SearchResult(f.name, 'Chemistry'));
       }
     }
+
     for (var c in ConstantDatabase.constants) {
       if (c.name.toLowerCase().contains(lowerQuery) ||
           c.symbol.toLowerCase().contains(lowerQuery)) {
-        results.add(SearchResult(
-            '${c.name} (${c.symbol}) = ${c.value} ${c.unit}', 'Constant'));
+        results.add(
+          SearchResult(
+            '${c.name} (${c.symbol}) = ${c.value} ${c.unit}',
+            'Constant',
+          ),
+        );
       }
     }
     return results;
