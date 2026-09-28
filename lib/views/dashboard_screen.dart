@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+
 import 'math_solver_page.dart';
-import 'physics/physics_solver_page.dart';
+import 'physics/physics_home_page.dart'; // Import the new home page
 import 'chemistry/chemistry_solver_page.dart';
 import 'tools/unit_converter_page.dart';
 
@@ -17,7 +18,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   // These are the 4 core tabs for our app
   final List<Widget> _pages = [
     const MathSolverPage(),
-    const PhysicsSolverPage(),
+    const PhysicsHomePage(), // Use the new home page here
     const ChemistryPage(),
     const ScientificToolsPage(),
   ];
@@ -28,9 +29,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final isDesktop = MediaQuery.of(context).size.width >= 800;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('OmniFormula Solver'),
-      ),
+      appBar: AppBar(title: const Text('OmniFormula Solver')),
       // On Desktop, use a side Navigation Rail. On Mobile, use a Bottom Bar.
       body: isDesktop
           ? Row(
@@ -44,10 +43,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   },
                   labelType: NavigationRailLabelType.all,
                   destinations: const [
-                    NavigationRailDestination(icon: Icon(Icons.calculate), label: Text('Math')),
-                    NavigationRailDestination(icon: Icon(Icons.science), label: Text('Physics')),
-                    NavigationRailDestination(icon: Icon(Icons.biotech), label: Text('Chem')),
-                    NavigationRailDestination(icon: Icon(Icons.build), label: Text('Tools')),
+                    NavigationRailDestination(
+                      icon: Icon(Icons.calculate),
+                      label: Text('Math'),
+                    ),
+                    NavigationRailDestination(
+                      icon: Icon(Icons.science),
+                      label: Text('Physics'),
+                    ),
+                    NavigationRailDestination(
+                      icon: Icon(Icons.biotech),
+                      label: Text('Chem'),
+                    ),
+                    NavigationRailDestination(
+                      icon: Icon(Icons.build),
+                      label: Text('Tools'),
+                    ),
                   ],
                 ),
                 const VerticalDivider(thickness: 1, width: 1),
@@ -66,10 +77,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
               },
               type: BottomNavigationBarType.fixed,
               items: const [
-                BottomNavigationBarItem(icon: Icon(Icons.calculate), label: 'Math'),
-                BottomNavigationBarItem(icon: Icon(Icons.science), label: 'Physics'),
-                BottomNavigationBarItem(icon: Icon(Icons.biotech), label: 'Chem'),
-                BottomNavigationBarItem(icon: Icon(Icons.build), label: 'Tools'),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.calculate),
+                  label: 'Math',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.science),
+                  label: 'Physics',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.biotech),
+                  label: 'Chem',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.build),
+                  label: 'Tools',
+                ),
               ],
             ),
     );

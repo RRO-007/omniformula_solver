@@ -2,83 +2,67 @@ import 'package:flutter/material.dart';
 
 import '../../controllers/solver_engine.dart';
 import '../../models/formula.dart';
-import '../../models/physics/formula_database.dart';
-import '../../models/physics/hsc_physics1_database.dart';
-import '../../models/physics/hsc_physics2_database.dart';
+import '../../widgets/math_keypad.dart';
 
-class PhysicsSolverPage extends StatelessWidget {
-  const PhysicsSolverPage({super.key});
+class PhysicsSolverPage extends StatefulWidget {
+  final String categoryName;
+  final List<Formula> allFormulas;
 
-  @override
-  Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 3,
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Physics'),
-          bottom: const TabBar(
-            isScrollable: true,
-            tabs: [
-              Tab(text: 'General'),
-              Tab(text: 'HSC 1st Paper'),
-              Tab(text: 'HSC 2nd Paper'),
-            ],
-          ),
-        ),
-        body: TabBarView(
-          children: [
-            FormulaSolver(
-              formulas: FormulaDatabase.physicsFormulas,
-              hubName: 'General Physics',
-            ),
-            FormulaSolver(
-              formulas: HscPhysics1Database.hscPhysics1Formulas,
-              hubName: 'HSC Physics 1st Paper',
-            ),
-            FormulaSolver(
-              formulas: HscPhysics2Database.hscPhysics2Formulas,
-              hubName: 'HSC Physics 2nd Paper',
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class FormulaSolver extends StatefulWidget {
-  final List<Formula> formulas;
-  final String hubName;
-
-  const FormulaSolver({
+  const PhysicsSolverPage({
     super.key,
-    required this.formulas,
-    required this.hubName,
+    required this.categoryName,
+    required this.allFormulas,
   });
 
   @override
-  State<FormulaSolver> createState() => _FormulaSolverState();
+  State<PhysicsSolverPage> createState() => _PhysicsSolverPageState();
 }
 
-class _FormulaSolverState extends State<FormulaSolver> {
+class _PhysicsSolverPageState extends State<PhysicsSolverPage> {
   final _solver = SolverEngine();
+  late List<Formula> _filteredFormulas;
   late Formula _selectedFormula;
 
   final Map<String, TextEditingController> _controllers = {};
+  final Map<String, FocusNode> _focusNodes = {};
+  TextEditingController? _activeController;
+
   String? _targetVariable;
   List<String> _steps = [];
 
   @override
   void initState() {
     super.initState();
-    _selectedFormula = widget.formulas[0];
+    // Simple filter logic based on category name (you can expand this)
+    _filteredFormulas = widget.allFormulas.where((f) {
+      // This is a basic filter. In a real app, you'd tag formulas with categories.
+      return true; // For now, show all to ensure nothing is lost
+    }).toList();
+
+    // If empty, fallback to all
+    if (_filteredFormulas.isEmpty) {
+      _filteredFormulas = widget.allFormulas;
+    }
+
+    _selectedFormula = _filteredFormulas[0];
     _initializeControllers();
   }
 
   void _initializeControllers() {
     _controllers.clear();
+    _focusNodes.clear();
     for (var variable in _selectedFormula.variables) {
-      _controllers[variable] = TextEditingController();
+      final controller = TextEditingController();
+      final focusNode = FocusNode();
+      focusNode.addListener(() {
+        if (focusNode.hasFocus) {
+          setState(() {
+            _activeController = controller;
+          });
+        }
+      });
+      _controllers[variable] = controller;
+      _focusNodes[variable] = focusNode;
     }
     _targetVariable = _selectedFormula.variables.first;
     _steps = [];
@@ -86,107 +70,160 @@ class _FormulaSolverState extends State<FormulaSolver> {
 
   void _solve() {
     Map<String, double> knownValues = {};
-
     for (var variable in _selectedFormula.variables) {
       if (variable != _targetVariable) {
         double val = double.tryParse(_controllers[variable]!.text) ?? 0.0;
         knownValues[variable] = val;
       }
     }
-
     setState(() {
       _steps = _solver.solve(_selectedFormula, _targetVariable!, knownValues);
     });
   }
 
+  void _onKeyTap(String value) {
+    if (_activeController != null) {
+      _activeController!.text += value;
+    }
+  }
+
+  void _onBackspace() {
+    if (_activeController != null && _activeController!.text.isNotEmpty) {
+      _activeController!.text = _activeController!.text.substring(
+        0,
+        _activeController!.text.length - 1,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return Scaffold(
+      appBar: AppBar(title: Text(widget.categoryName)),
+      body: Column(
         children: [
-          // Header showing which hub we're in
-          Text(
-            widget.hubName,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
-
-          // Formula dropdown
-          DropdownButton<Formula>(
-            value: _selectedFormula,
-            isExpanded: true,
-            onChanged: (Formula? newValue) {
-              if (newValue != null) {
-                setState(() {
-                  _selectedFormula = newValue;
-                  _initializeControllers();
-                });
-              }
-            },
-            items: widget.formulas.map((formula) {
-              return DropdownMenuItem(
-                value: formula,
-                child: Text(formula.name, overflow: TextOverflow.ellipsis),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 12),
-
-          const Text("I want to solve for:"),
-          DropdownButton<String>(
-            value: _targetVariable,
-            isExpanded: true,
-            onChanged: (String? newValue) {
-              setState(() {
-                _targetVariable = newValue;
-                _steps = [];
-              });
-            },
-            items: _selectedFormula.variables.map((variable) {
-              return DropdownMenuItem(value: variable, child: Text(variable));
-            }).toList(),
-          ),
-          const SizedBox(height: 12),
-
-          // Dynamic input fields
           Expanded(
-            child: ListView(
-              children: [
-                ..._selectedFormula.variables
-                    .where((v) => v != _targetVariable)
-                    .map((variable) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 12.0),
-                        child: TextField(
-                          controller: _controllers[variable],
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
-                            signed: true,
-                          ),
-                          decoration: InputDecoration(
-                            labelText: 'Enter value for $variable',
-                          ),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Formula Dropdown
+                  DropdownButton<Formula>(
+                    value: _selectedFormula,
+                    isExpanded: true,
+                    onChanged: (Formula? newValue) {
+                      if (newValue != null) {
+                        setState(() {
+                          _selectedFormula = newValue;
+                          _initializeControllers();
+                        });
+                      }
+                    },
+                    items: _filteredFormulas.map((formula) {
+                      return DropdownMenuItem(
+                        value: formula,
+                        child: Text(
+                          formula.name,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       );
-                    }),
-                const SizedBox(height: 20),
-                ElevatedButton(onPressed: _solve, child: const Text('Solve')),
-                const SizedBox(height: 20),
-                const Text(
-                  'Workout Steps:',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 10),
-                ..._steps.map(
-                  (step) => Padding(
-                    padding: const EdgeInsets.only(bottom: 8.0),
-                    child: Text(step, style: const TextStyle(fontSize: 16)),
+                    }).toList(),
                   ),
-                ),
-              ],
+                  const SizedBox(height: 16),
+
+                  // Target Variable Dropdown
+                  const Text(
+                    "Solve for:",
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  DropdownButton<String>(
+                    value: _targetVariable,
+                    isExpanded: true,
+                    onChanged: (String? newValue) {
+                      setState(() {
+                        _targetVariable = newValue;
+                        _steps = [];
+                      });
+                    },
+                    items: _selectedFormula.variables.map((variable) {
+                      return DropdownMenuItem(
+                        value: variable,
+                        child: Text(variable),
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Dynamic Input Fields
+                  ..._selectedFormula.variables
+                      .where((v) => v != _targetVariable)
+                      .map((variable) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 12.0),
+                          child: TextField(
+                            controller: _controllers[variable],
+                            focusNode: _focusNodes[variable],
+                            readOnly: true, // Prevents system keyboard from popping up
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                              signed: true,
+                            ),
+                            decoration: InputDecoration(
+                              labelText: 'Enter value for $variable',
+                              border: const OutlineInputBorder(),
+                            ),
+                            onTap: () {
+                              setState(() {
+                                _activeController = _controllers[variable];
+                              });
+                            },
+                          ),
+                        );
+                      }),
+
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: _solve,
+                      child: const Text(
+                        'Calculate',
+                        style: TextStyle(fontSize: 18),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Steps Display
+                  if (_steps.isNotEmpty) ...[
+                    const Text(
+                      'Solution Steps:',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    ..._steps.map(
+                      (step) => Padding(
+                        padding: const EdgeInsets.only(bottom: 8.0),
+                        child: Text(step, style: const TextStyle(fontSize: 16)),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ),
+          ),
+          // Custom Keypad at the bottom
+          MathKeypad(
+            onKeyTap: _onKeyTap,
+            onBackspace: _onBackspace,
+            onSave: () {
+              FocusScope.of(context).unfocus();
+            },
           ),
         ],
       ),
