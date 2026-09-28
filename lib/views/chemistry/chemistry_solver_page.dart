@@ -25,9 +25,9 @@ class ChemistryPage extends StatelessWidget {
             ],
           ),
         ),
-        body: const TabBarView(
+        body: TabBarView(
           children: [
-            PeriodicTablePage(),
+            const PeriodicTablePage(),
             FormulaSolver(
               formulas: ChemistryFormulaDatabase.chemistryFormulas,
               hubName: 'General Chemistry',
