@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../controllers/solver_engine.dart';
 import '../../models/formula.dart';
 import '../../widgets/math_keypad.dart';
+import '../../widgets/math_renderer.dart';
 
 class PhysicsSolverPage extends StatefulWidget {
   final String categoryName;
@@ -33,19 +34,89 @@ class _PhysicsSolverPageState extends State<PhysicsSolverPage> {
   @override
   void initState() {
     super.initState();
-    // Simple filter logic based on category name (you can expand this)
-    _filteredFormulas = widget.allFormulas.where((f) {
-      // This is a basic filter. In a real app, you'd tag formulas with categories.
-      return true; // For now, show all to ensure nothing is lost
-    }).toList();
-
-    // If empty, fallback to all
-    if (_filteredFormulas.isEmpty) {
-      _filteredFormulas = widget.allFormulas;
-    }
-
+    _filteredFormulas = _filterByCategory(
+      widget.allFormulas,
+      widget.categoryName,
+    );
     _selectedFormula = _filteredFormulas[0];
     _initializeControllers();
+  }
+
+  List<Formula> _filterByCategory(List<Formula> formulas, String category) {
+    if (category == 'All Topics') return formulas;
+
+    final cat = category.toLowerCase();
+    final filtered = formulas.where((f) {
+      final n = f.name.toLowerCase();
+      if (cat == 'kinematics')
+        return n.contains('kinematics') ||
+            n.contains('velocity') ||
+            n.contains('displacement') ||
+            n.contains('acceleration');
+      if (cat == 'dynamics')
+        return n.contains('force') ||
+            n.contains('momentum') ||
+            n.contains('newton') ||
+            n.contains('impulse') ||
+            n.contains('torque');
+      if (cat == 'energy')
+        return n.contains('work') ||
+            n.contains('energy') ||
+            n.contains('power') ||
+            n.contains('spring');
+      if (cat == 'gravitation')
+        return n.contains('gravit') ||
+            n.contains('orbit') ||
+            n.contains('escape') ||
+            n.contains('kepler');
+      if (cat == 'waves')
+        return n.contains('wave') ||
+            n.contains('frequency') ||
+            n.contains('period') ||
+            n.contains('sound') ||
+            n.contains('doppler');
+      if (cat == 'thermodynamics')
+        return n.contains('thermo') ||
+            n.contains('heat') ||
+            n.contains('gas') ||
+            n.contains('entropy') ||
+            n.contains('carnot');
+      if (cat == 'electromagnetism')
+        return n.contains('electric') ||
+            n.contains('magnet') ||
+            n.contains('ohm') ||
+            n.contains('circuit') ||
+            n.contains('capacitor');
+      if (cat == 'optics')
+        return n.contains('lens') ||
+            n.contains('optics') ||
+            n.contains('snell') ||
+            n.contains('prism') ||
+            n.contains('mirror');
+      if (cat == 'modern physics')
+        return n.contains('photon') ||
+            n.contains('relativity') ||
+            n.contains('broglie') ||
+            n.contains('bohr');
+      if (cat == 'nuclear')
+        return n.contains('nuclear') ||
+            n.contains('radioactive') ||
+            n.contains('decay') ||
+            n.contains('binding');
+      if (cat == 'fluids')
+        return n.contains('fluid') ||
+            n.contains('stokes') ||
+            n.contains('viscosity') ||
+            n.contains('pressure');
+      if (cat == 'astronomy')
+        return n.contains('hubble') ||
+            n.contains('star') ||
+            n.contains('solar') ||
+            n.contains('black hole');
+      return true;
+    }).toList();
+
+    return filtered.isEmpty ? formulas : filtered;
   }
 
   void _initializeControllers() {
@@ -98,8 +169,11 @@ class _PhysicsSolverPageState extends State<PhysicsSolverPage> {
 
   @override
   Widget build(BuildContext context) {
+    // Use the LaTeX formula if available, otherwise use the plain text name
+    final displayFormula = _selectedFormula.latex ?? _selectedFormula.name;
+
     return Scaffold(
-      appBar: AppBar(title: Text(widget.categoryName)),
+      appBar: AppBar(title: Text(widget.categoryName), elevation: 0),
       body: Column(
         children: [
           Expanded(
@@ -108,7 +182,26 @@ class _PhysicsSolverPageState extends State<PhysicsSolverPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Formula Dropdown
+                  // Formula Display Card
+                  Card(
+                    elevation: 4,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    color: Theme.of(context).colorScheme.primaryContainer,
+                    child: Padding(
+                      padding: const EdgeInsets.all(20.0),
+                      child: Center(
+                        child: MathRenderer(
+                          formula: displayFormula,
+                          fontSize: 26,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Formula Selector (if multiple)
                   DropdownButton<Formula>(
                     value: _selectedFormula,
                     isExpanded: true,
@@ -132,11 +225,12 @@ class _PhysicsSolverPageState extends State<PhysicsSolverPage> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Target Variable Dropdown
+                  // Target Variable Selector
                   const Text(
                     "Solve for:",
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
+                  const SizedBox(height: 8),
                   DropdownButton<String>(
                     value: _targetVariable,
                     isExpanded: true,
@@ -153,7 +247,7 @@ class _PhysicsSolverPageState extends State<PhysicsSolverPage> {
                       );
                     }).toList(),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
 
                   // Dynamic Input Fields
                   ..._selectedFormula.variables
@@ -164,14 +258,12 @@ class _PhysicsSolverPageState extends State<PhysicsSolverPage> {
                           child: TextField(
                             controller: _controllers[variable],
                             focusNode: _focusNodes[variable],
-                            readOnly: true, // Prevents system keyboard from popping up
-                            keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true,
-                              signed: true,
-                            ),
+                            readOnly: true, // Prevents system keyboard
                             decoration: InputDecoration(
                               labelText: 'Enter value for $variable',
                               border: const OutlineInputBorder(),
+                              filled: true,
+                              fillColor: Theme.of(context).colorScheme.surface,
                             ),
                             onTap: () {
                               setState(() {
@@ -187,29 +279,58 @@ class _PhysicsSolverPageState extends State<PhysicsSolverPage> {
                     width: double.infinity,
                     height: 50,
                     child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Theme.of(context).colorScheme.primary,
+                        foregroundColor: Theme.of(context)
+                            .colorScheme
+                            .onPrimary,
+                      ),
                       onPressed: _solve,
                       child: const Text(
                         'Calculate',
-                        style: TextStyle(fontSize: 18),
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),
                   const SizedBox(height: 24),
 
-                  // Steps Display
+                  // Solution Steps Display Card
                   if (_steps.isNotEmpty) ...[
-                    const Text(
-                      'Solution Steps:',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                    Card(
+                      elevation: 2,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    ..._steps.map(
-                      (step) => Padding(
-                        padding: const EdgeInsets.only(bottom: 8.0),
-                        child: Text(step, style: const TextStyle(fontSize: 16)),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Solution:',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            ..._steps.map(
+                              (step) => Padding(
+                                padding: const EdgeInsets.only(bottom: 8.0),
+                                child: Text(
+                                  step,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    height: 1.5,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ],
