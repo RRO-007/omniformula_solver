@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../controllers/update_service.dart';
 import 'math_solver_page.dart';
 import 'physics/physics_home_page.dart';
 import 'chemistry/chemistry_solver_page.dart';
@@ -30,7 +31,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final isDesktop = MediaQuery.of(context).size.width >= 800;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('OmniFormula Solver')),
+      appBar: AppBar(
+        title: const Text('OmniFormula Solver'),
+        actions: [
+          // Update check button — visible on all tabs
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Check for Updates',
+            onPressed: () => UpdateService.checkForUpdate(context),
+          ),
+        ],
+      ),
       body: isDesktop
           ? Row(
               children: [
