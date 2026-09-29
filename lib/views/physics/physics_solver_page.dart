@@ -43,76 +43,91 @@ class _PhysicsSolverPageState extends State<PhysicsSolverPage> {
   }
 
   List<Formula> _filterByCategory(List<Formula> formulas, String category) {
-    if (category == 'All Topics') return formulas;
+    if (category == 'All Topics') {
+      return formulas;
+    }
 
     final cat = category.toLowerCase();
     final filtered = formulas.where((f) {
       final n = f.name.toLowerCase();
-      if (cat == 'kinematics')
+
+      if (cat == 'kinematics') {
         return n.contains('kinematics') ||
             n.contains('velocity') ||
             n.contains('displacement') ||
             n.contains('acceleration');
-      if (cat == 'dynamics')
+      }
+      if (cat == 'dynamics') {
         return n.contains('force') ||
             n.contains('momentum') ||
             n.contains('newton') ||
             n.contains('impulse') ||
             n.contains('torque');
-      if (cat == 'energy')
+      }
+      if (cat == 'energy') {
         return n.contains('work') ||
             n.contains('energy') ||
             n.contains('power') ||
             n.contains('spring');
-      if (cat == 'gravitation')
+      }
+      if (cat == 'gravitation') {
         return n.contains('gravit') ||
             n.contains('orbit') ||
             n.contains('escape') ||
             n.contains('kepler');
-      if (cat == 'waves')
+      }
+      if (cat == 'waves') {
         return n.contains('wave') ||
             n.contains('frequency') ||
             n.contains('period') ||
             n.contains('sound') ||
             n.contains('doppler');
-      if (cat == 'thermodynamics')
+      }
+      if (cat == 'thermodynamics') {
         return n.contains('thermo') ||
             n.contains('heat') ||
             n.contains('gas') ||
             n.contains('entropy') ||
             n.contains('carnot');
-      if (cat == 'electromagnetism')
+      }
+      if (cat == 'electromagnetism') {
         return n.contains('electric') ||
             n.contains('magnet') ||
             n.contains('ohm') ||
             n.contains('circuit') ||
             n.contains('capacitor');
-      if (cat == 'optics')
+      }
+      if (cat == 'optics') {
         return n.contains('lens') ||
             n.contains('optics') ||
             n.contains('snell') ||
             n.contains('prism') ||
             n.contains('mirror');
-      if (cat == 'modern physics')
+      }
+      if (cat == 'modern physics') {
         return n.contains('photon') ||
             n.contains('relativity') ||
             n.contains('broglie') ||
             n.contains('bohr');
-      if (cat == 'nuclear')
+      }
+      if (cat == 'nuclear') {
         return n.contains('nuclear') ||
             n.contains('radioactive') ||
             n.contains('decay') ||
             n.contains('binding');
-      if (cat == 'fluids')
+      }
+      if (cat == 'fluids') {
         return n.contains('fluid') ||
             n.contains('stokes') ||
             n.contains('viscosity') ||
             n.contains('pressure');
-      if (cat == 'astronomy')
+      }
+      if (cat == 'astronomy') {
         return n.contains('hubble') ||
             n.contains('star') ||
             n.contains('solar') ||
             n.contains('black hole');
+      }
       return true;
     }).toList();
 
@@ -201,7 +216,7 @@ class _PhysicsSolverPageState extends State<PhysicsSolverPage> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Formula Selector (if multiple)
+                  // Formula Selector
                   DropdownButton<Formula>(
                     value: _selectedFormula,
                     isExpanded: true,
