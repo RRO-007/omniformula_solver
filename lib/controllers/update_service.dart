@@ -1,4 +1,5 @@
 import 'dart:convert';
+
 import 'package:flutter/foundation.dart'
     show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
@@ -54,8 +55,7 @@ class UpdateService {
       }
 
       final latestVersion = platformData['version'] as String? ?? '0.0.0';
-      final downloadUrl =
-          platformData['download_url'] as String? ?? updateUrl;
+      final downloadUrl = platformData['download_url'] as String? ?? updateUrl;
       final releaseNotes =
           platformData['release_notes'] as String? ?? 'No release notes.';
 
@@ -101,10 +101,12 @@ class UpdateService {
     final currentParts = current.split('.');
 
     for (int i = 0; i < 3; i++) {
-      final l =
-          i < latestParts.length ? (int.tryParse(latestParts[i]) ?? 0) : 0;
-      final c =
-          i < currentParts.length ? (int.tryParse(currentParts[i]) ?? 0) : 0;
+      final l = i < latestParts.length
+          ? (int.tryParse(latestParts[i]) ?? 0)
+          : 0;
+      final c = i < currentParts.length
+          ? (int.tryParse(currentParts[i]) ?? 0)
+          : 0;
       if (l > c) return true;
       if (l < c) return false;
     }
