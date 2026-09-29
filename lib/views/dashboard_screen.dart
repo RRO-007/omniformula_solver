@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
 import 'math_solver_page.dart';
-import 'physics/physics_home_page.dart'; // Import the new home page
+import 'physics/physics_home_page.dart';
 import 'chemistry/chemistry_solver_page.dart';
 import 'tools/unit_converter_page.dart';
+import 'search/smart_search_page.dart';
+import 'practice/practice_home_page.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -15,22 +17,21 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0;
 
-  // These are the 4 core tabs for our app
+  // These are the 5 core tabs for our app
   final List<Widget> _pages = [
     const MathSolverPage(),
-    const PhysicsHomePage(), // Use the new home page here
+    const PhysicsHomePage(),
     const ChemistryPage(),
-    const ScientificToolsPage(),
+    const SmartSearchPage(), // NEW: Smart Search
+    const PracticeHomePage(), // NEW: Practice Mode
   ];
 
   @override
   Widget build(BuildContext context) {
-    // Check if the screen is wide (Desktop/Web) or narrow (Mobile)
     final isDesktop = MediaQuery.of(context).size.width >= 800;
 
     return Scaffold(
       appBar: AppBar(title: const Text('OmniFormula Solver')),
-      // On Desktop, use a side Navigation Rail. On Mobile, use a Bottom Bar.
       body: isDesktop
           ? Row(
               children: [
@@ -56,8 +57,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       label: Text('Chem'),
                     ),
                     NavigationRailDestination(
-                      icon: Icon(Icons.build),
-                      label: Text('Tools'),
+                      icon: Icon(Icons.search),
+                      label: Text('Search'),
+                    ),
+                    NavigationRailDestination(
+                      icon: Icon(Icons.quiz),
+                      label: Text('Practice'),
                     ),
                   ],
                 ),
@@ -90,8 +95,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   label: 'Chem',
                 ),
                 BottomNavigationBarItem(
-                  icon: Icon(Icons.build),
-                  label: 'Tools',
+                  icon: Icon(Icons.search),
+                  label: 'Search',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.quiz),
+                  label: 'Practice',
                 ),
               ],
             ),
