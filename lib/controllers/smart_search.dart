@@ -61,9 +61,7 @@ class SmartSearch {
     'pressure': 'P',
     'volume': 'V',
     'temperature': 'T',
-    'force': 'F',
     'weight': 'W',
-    'momentum': 'p',
   };
 
   static SmartSearchResult? process(String query) {
@@ -84,7 +82,9 @@ class SmartSearch {
       }
     }
 
-    if (knownValues.isEmpty) return null;
+    if (knownValues.isEmpty) {
+      return null;
+    }
 
     // 2. Find the target variable (the word after 'what is' or 'find')
     String? targetVariable;
@@ -105,17 +105,22 @@ class SmartSearch {
       final hasAllKnown = knownValues.keys.every(
         (k) => formulaVars.contains(k),
       );
-      if (!hasAllKnown) continue;
+      if (!hasAllKnown) {
+        continue;
+      }
 
       // If we have a target variable, check if the formula has it
-      if (targetVariable != null && !formulaVars.contains(targetVariable))
+      if (targetVariable != null && !formulaVars.contains(targetVariable)) {
         continue;
+      }
 
       // If no target variable was found, try to solve for the missing one
       String finalTarget = targetVariable ?? '';
       if (finalTarget.isEmpty) {
         final missing = formulaVars.difference(knownValues.keys.toSet());
-        if (missing.isEmpty) continue;
+        if (missing.isEmpty) {
+          continue;
+        }
         finalTarget = missing.first;
       }
 

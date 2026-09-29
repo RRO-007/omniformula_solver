@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'math_solver_page.dart';
 import 'physics/physics_home_page.dart';
 import 'chemistry/chemistry_solver_page.dart';
-import 'tools/unit_converter_page.dart';
 import 'search/smart_search_page.dart';
 import 'practice/practice_home_page.dart';
 
@@ -22,8 +21,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     const MathSolverPage(),
     const PhysicsHomePage(),
     const ChemistryPage(),
-    const SmartSearchPage(), // NEW: Smart Search
-    const PracticeHomePage(), // NEW: Practice Mode
+    const SmartSearchPage(),
+    const PracticeHomePage(),
   ];
 
   @override
