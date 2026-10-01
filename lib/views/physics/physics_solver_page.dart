@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../../controllers/solver_engine.dart';
 import '../../models/formula.dart';
-import '../../widgets/math_keypad.dart';
 import '../../widgets/math_renderer.dart';
+import '../../widgets/physics_keypad.dart';
+import 'physics_solution_page.dart';
 
 class PhysicsSolverPage extends StatefulWidget {
   final String categoryName;
@@ -20,16 +21,11 @@ class PhysicsSolverPage extends StatefulWidget {
 }
 
 class _PhysicsSolverPageState extends State<PhysicsSolverPage> {
-  final _solver = SolverEngine();
   late List<Formula> _filteredFormulas;
   late Formula _selectedFormula;
 
-  final Map<String, TextEditingController> _controllers = {};
-  final Map<String, FocusNode> _focusNodes = {};
-  TextEditingController? _activeController;
-
-  String? _targetVariable;
-  List<String> _steps = [];
+  final Map<String, String> _values = {};
+  String? _editingVariable;
 
   @override
   void initState() {
@@ -38,331 +34,379 @@ class _PhysicsSolverPageState extends State<PhysicsSolverPage> {
       widget.allFormulas,
       widget.categoryName,
     );
-    _selectedFormula = _filteredFormulas[0];
-    _initializeControllers();
+    _selectedFormula = _filteredFormulas.isNotEmpty
+        ? _filteredFormulas[0]
+        : widget.allFormulas[0];
   }
 
   List<Formula> _filterByCategory(List<Formula> formulas, String category) {
-    if (category == 'All Topics') {
-      return formulas;
-    }
-
-    final cat = category.toLowerCase();
-    final filtered = formulas.where((f) {
-      final n = f.name.toLowerCase();
-
-      if (cat == 'kinematics') {
-        return n.contains('kinematics') ||
-            n.contains('velocity') ||
-            n.contains('displacement') ||
-            n.contains('acceleration');
-      }
-      if (cat == 'dynamics') {
-        return n.contains('force') ||
-            n.contains('momentum') ||
-            n.contains('newton') ||
-            n.contains('impulse') ||
-            n.contains('torque');
-      }
-      if (cat == 'energy') {
-        return n.contains('work') ||
-            n.contains('energy') ||
-            n.contains('power') ||
-            n.contains('spring');
-      }
-      if (cat == 'gravitation') {
-        return n.contains('gravit') ||
-            n.contains('orbit') ||
-            n.contains('escape') ||
-            n.contains('kepler');
-      }
-      if (cat == 'waves') {
-        return n.contains('wave') ||
-            n.contains('frequency') ||
-            n.contains('period') ||
-            n.contains('sound') ||
-            n.contains('doppler');
-      }
-      if (cat == 'thermodynamics') {
-        return n.contains('thermo') ||
-            n.contains('heat') ||
-            n.contains('gas') ||
-            n.contains('entropy') ||
-            n.contains('carnot');
-      }
-      if (cat == 'electromagnetism') {
-        return n.contains('electric') ||
-            n.contains('magnet') ||
-            n.contains('ohm') ||
-            n.contains('circuit') ||
-            n.contains('capacitor');
-      }
-      if (cat == 'optics') {
-        return n.contains('lens') ||
-            n.contains('optics') ||
-            n.contains('snell') ||
-            n.contains('prism') ||
-            n.contains('mirror');
-      }
-      if (cat == 'modern physics') {
-        return n.contains('photon') ||
-            n.contains('relativity') ||
-            n.contains('broglie') ||
-            n.contains('bohr');
-      }
-      if (cat == 'nuclear') {
-        return n.contains('nuclear') ||
-            n.contains('radioactive') ||
-            n.contains('decay') ||
-            n.contains('binding');
-      }
-      if (cat == 'fluids') {
-        return n.contains('fluid') ||
-            n.contains('stokes') ||
-            n.contains('viscosity') ||
-            n.contains('pressure');
-      }
-      if (cat == 'astronomy') {
-        return n.contains('hubble') ||
-            n.contains('star') ||
-            n.contains('solar') ||
-            n.contains('black hole');
-      }
-      return true;
-    }).toList();
-
+    if (category == 'All Topics') return formulas;
+    final filtered = formulas
+        .where((f) => f.category.toLowerCase() == category.toLowerCase())
+        .toList();
     return filtered.isEmpty ? formulas : filtered;
   }
 
-  void _initializeControllers() {
-    _controllers.clear();
-    _focusNodes.clear();
-    for (var variable in _selectedFormula.variables) {
-      final controller = TextEditingController();
-      final focusNode = FocusNode();
-      focusNode.addListener(() {
-        if (focusNode.hasFocus) {
-          setState(() {
-            _activeController = controller;
-          });
-        }
-      });
-      _controllers[variable] = controller;
-      _focusNodes[variable] = focusNode;
-    }
-    _targetVariable = _selectedFormula.variables.first;
-    _steps = [];
-  }
-
-  void _solve() {
-    Map<String, double> knownValues = {};
-    for (var variable in _selectedFormula.variables) {
-      if (variable != _targetVariable) {
-        double val = double.tryParse(_controllers[variable]!.text) ?? 0.0;
-        knownValues[variable] = val;
-      }
-    }
+  void _selectFormula(Formula f) {
     setState(() {
-      _steps = _solver.solve(_selectedFormula, _targetVariable!, knownValues);
+      _selectedFormula = f;
+      _values.clear();
+      _editingVariable = null;
     });
   }
 
-  void _onKeyTap(String value) {
-    if (_activeController != null) {
-      _activeController!.text += value;
-    }
+  /// The target is automatically the only variable without a value.
+  String? get _targetVariable {
+    final unknowns = _selectedFormula.variables
+        .where((v) => (_values[v] ?? '').isEmpty)
+        .toList();
+    return unknowns.length == 1 ? unknowns.first : null;
+  }
+
+  bool get _canCalculate => _targetVariable != null;
+
+  void _onChipTap(String variable) {
+    setState(() {
+      _editingVariable = variable;
+    });
+  }
+
+  void _onKeyTap(String key) {
+    if (_editingVariable == null) return;
+    setState(() {
+      final current = _values[_editingVariable!] ?? '';
+      // Prevent multiple decimal points
+      if (key == '.' && current.contains('.')) return;
+      _values[_editingVariable!] = current + key;
+    });
   }
 
   void _onBackspace() {
-    if (_activeController != null && _activeController!.text.isNotEmpty) {
-      _activeController!.text = _activeController!.text.substring(
-        0,
-        _activeController!.text.length - 1,
-      );
+    if (_editingVariable == null) return;
+    setState(() {
+      final current = _values[_editingVariable!] ?? '';
+      _values[_editingVariable!] = current.isEmpty
+          ? ''
+          : current.substring(0, current.length - 1);
+    });
+  }
+
+  void _onClear() {
+    if (_editingVariable == null) return;
+    setState(() {
+      _values[_editingVariable!] = '';
+    });
+  }
+
+  void _onSave() {
+    setState(() {
+      _editingVariable = null;
+    });
+  }
+
+  void _onDeleteKnown(String variable) {
+    setState(() {
+      _values.remove(variable);
+    });
+  }
+
+  void _onCalculate() {
+    final target = _targetVariable;
+    if (target == null) return;
+
+    final known = <String, double>{};
+    for (final v in _selectedFormula.variables) {
+      if (v != target) {
+        final raw = _values[v];
+        if (raw != null && raw.isNotEmpty) {
+          final parsed = double.tryParse(raw);
+          if (parsed != null) known[v] = parsed;
+        }
+      }
     }
+
+    final result = SolverEngine().solveDetailed(
+      _selectedFormula,
+      target,
+      known,
+    );
+    if (result == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not solve. Check your values.')),
+      );
+      return;
+    }
+
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => PhysicsSolutionPage(result: result)),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    // Use the LaTeX formula if available, otherwise use the plain text name
-    final displayFormula = _selectedFormula.latex ?? _selectedFormula.name;
+    final theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(title: Text(widget.categoryName), elevation: 0),
       body: Column(
         children: [
           Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Formula Display Card
-                  Card(
-                    elevation: 4,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    color: Theme.of(context).colorScheme.primaryContainer,
-                    child: Padding(
-                      padding: const EdgeInsets.all(20.0),
-                      child: Center(
-                        child: MathRenderer(
-                          formula: displayFormula,
-                          fontSize: 26,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Formula Selector
-                  DropdownButton<Formula>(
-                    value: _selectedFormula,
-                    isExpanded: true,
-                    onChanged: (Formula? newValue) {
-                      if (newValue != null) {
-                        setState(() {
-                          _selectedFormula = newValue;
-                          _initializeControllers();
-                        });
-                      }
-                    },
-                    items: _filteredFormulas.map((formula) {
-                      return DropdownMenuItem(
-                        value: formula,
-                        child: Text(
-                          formula.name,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Target Variable Selector
-                  const Text(
-                    "Solve for:",
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
-                  const SizedBox(height: 8),
-                  DropdownButton<String>(
-                    value: _targetVariable,
-                    isExpanded: true,
-                    onChanged: (String? newValue) {
-                      setState(() {
-                        _targetVariable = newValue;
-                        _steps = [];
-                      });
-                    },
-                    items: _selectedFormula.variables.map((variable) {
-                      return DropdownMenuItem(
-                        value: variable,
-                        child: Text(variable),
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Dynamic Input Fields
-                  ..._selectedFormula.variables
-                      .where((v) => v != _targetVariable)
-                      .map((variable) {
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 12.0),
-                          child: TextField(
-                            controller: _controllers[variable],
-                            focusNode: _focusNodes[variable],
-                            readOnly: true, // Prevents system keyboard
-                            decoration: InputDecoration(
-                              labelText: 'Enter value for $variable',
-                              border: const OutlineInputBorder(),
-                              filled: true,
-                              fillColor: Theme.of(context).colorScheme.surface,
-                            ),
-                            onTap: () {
-                              setState(() {
-                                _activeController = _controllers[variable];
-                              });
-                            },
-                          ),
-                        );
-                      }),
-
-                  const SizedBox(height: 20),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Theme.of(context).colorScheme.primary,
-                        foregroundColor: Theme.of(context)
-                            .colorScheme
-                            .onPrimary,
-                      ),
-                      onPressed: _solve,
-                      child: const Text(
-                        'Calculate',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Solution Steps Display Card
-                  if (_steps.isNotEmpty) ...[
-                    Card(
-                      elevation: 2,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Solution:',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            ..._steps.map(
-                              (step) => Padding(
-                                padding: const EdgeInsets.only(bottom: 8.0),
-                                child: Text(
-                                  step,
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    height: 1.5,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+              children: [
+                _buildFormulaCard(theme),
+                const SizedBox(height: 20),
+                _buildFormulaSelector(theme),
+                const SizedBox(height: 24),
+                _buildUnknownSection(theme),
+                const SizedBox(height: 20),
+                _buildKnownSection(theme),
+                const SizedBox(height: 24),
+                _buildCalculateButton(theme),
+              ],
             ),
           ),
-          // Custom Keypad at the bottom
-          MathKeypad(
-            onKeyTap: _onKeyTap,
-            onBackspace: _onBackspace,
-            onSave: () {
-              FocusScope.of(context).unfocus();
-            },
-          ),
+          if (_editingVariable != null)
+            PhysicsKeypad(
+              variableLabel: _niceLabel(_editingVariable!),
+              currentValue: _values[_editingVariable!] ?? '',
+              unit: _selectedFormula.units[_editingVariable!],
+              onKeyTap: _onKeyTap,
+              onBackspace: _onBackspace,
+              onClear: _onClear,
+              onSave: _onSave,
+            ),
         ],
       ),
     );
+  }
+
+  Widget _buildFormulaCard(ThemeData theme) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primaryContainer,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Center(
+        child: MathRenderer(formula: _selectedFormula.cleanLatex, fontSize: 28),
+      ),
+    );
+  }
+
+  Widget _buildFormulaSelector(ThemeData theme) {
+    return DropdownButton<Formula>(
+      value: _selectedFormula,
+      isExpanded: true,
+      underline: Container(height: 1, color: theme.colorScheme.outlineVariant),
+      onChanged: (f) {
+        if (f != null) _selectFormula(f);
+      },
+      items: _filteredFormulas
+          .map(
+            (f) => DropdownMenuItem(
+              value: f,
+              child: Text(
+                f.name,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 14),
+              ),
+            ),
+          )
+          .toList(),
+    );
+  }
+
+  Widget _buildUnknownSection(ThemeData theme) {
+    final unknowns = _selectedFormula.variables
+        .where((v) => (_values[v] ?? '').isEmpty)
+        .toList();
+
+    if (unknowns.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'UNKNOWN VARIABLES',
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1.5,
+            color: theme.colorScheme.primary,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: unknowns.map((v) => _unknownChip(theme, v)).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _unknownChip(ThemeData theme, String variable) {
+    final isTarget = _targetVariable == variable;
+    final borderColor = isTarget
+        ? theme.colorScheme.primary
+        : theme.colorScheme.outlineVariant;
+    final textColor = isTarget
+        ? theme.colorScheme.primary
+        : theme.colorScheme.onSurface;
+
+    return InkWell(
+      onTap: () => _onChipTap(variable),
+      borderRadius: BorderRadius.circular(24),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+        decoration: BoxDecoration(
+          border: Border.all(color: borderColor, width: 1.5),
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: Text(
+          _niceLabel(variable),
+          style: TextStyle(
+            color: textColor,
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildKnownSection(ThemeData theme) {
+    final known = _selectedFormula.variables
+        .where((v) => (_values[v] ?? '').isNotEmpty)
+        .toList();
+
+    if (known.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'KNOWN VALUES',
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1.5,
+            color: theme.colorScheme.primary,
+          ),
+        ),
+        const SizedBox(height: 12),
+        ...known.map((v) => _knownTile(theme, v)).toList(),
+      ],
+    );
+  }
+
+  Widget _knownTile(ThemeData theme, String variable) {
+    final unit = _selectedFormula.units[variable];
+    final value = _values[variable] ?? '';
+    final displayValue = unit != null ? '$value $unit' : value;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(14),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: () => _onChipTap(variable),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 16,
+                  backgroundColor: theme.colorScheme.primary,
+                  child: Text(
+                    variable,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onPrimary,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Text(
+                  displayValue,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const Spacer(),
+                IconButton(
+                  iconSize: 20,
+                  icon: Icon(Icons.cancel, color: theme.colorScheme.outline),
+                  onPressed: () => _onDeleteKnown(variable),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCalculateButton(ThemeData theme) {
+    return SizedBox(
+      width: double.infinity,
+      height: 56,
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: theme.colorScheme.primary,
+          foregroundColor: theme.colorScheme.onPrimary,
+          disabledBackgroundColor: theme.colorScheme.surfaceContainerHighest,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+        ),
+        onPressed: _canCalculate ? _onCalculate : null,
+        child: const Text(
+          'Calculate',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 0.5,
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _niceLabel(String v) {
+    const map = {
+      'm': 'Mass',
+      'F': 'Force',
+      'a': 'Acceleration',
+      'v': 'Velocity',
+      'u': 'Initial Velocity',
+      't': 'Time',
+      's': 'Displacement',
+      'p': 'Momentum',
+      'W': 'Work',
+      'P': 'Power',
+      'KE': 'Kinetic Energy',
+      'PE': 'Potential Energy',
+      'g': 'Gravity',
+      'h': 'Height',
+      'J': 'Impulse',
+      'd': 'Distance',
+      'r': 'Radius',
+      'm1': 'Mass 1',
+      'm2': 'Mass 2',
+      'V': 'Voltage',
+      'I': 'Current',
+      'R': 'Resistance',
+      'f': 'Frequency',
+      'lambda': 'Wavelength',
+      'T': 'Period',
+    };
+    return map[v] ?? v;
   }
 }
