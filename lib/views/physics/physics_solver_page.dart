@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../../controllers/solver_engine.dart';
 import '../../models/formula.dart';
-import '../../widgets/math_renderer.dart';
+import '../../models/physics/formula_database.dart';
+import '../../models/physics/hsc_physics1_database.dart';
+import '../../models/physics/hsc_physics2_database.dart';
 import '../../widgets/physics_keypad.dart';
 import 'physics_solution_page.dart';
 
@@ -21,22 +23,19 @@ class PhysicsSolverPage extends StatefulWidget {
 }
 
 class _PhysicsSolverPageState extends State<PhysicsSolverPage> {
-  late List<Formula> _filteredFormulas;
-  late Formula _selectedFormula;
+  late List<Formula> _categoryFormulas;
 
+  String? _targetVariable;
   final Map<String, String> _values = {};
   String? _editingVariable;
 
   @override
   void initState() {
     super.initState();
-    _filteredFormulas = _filterByCategory(
+    _categoryFormulas = _filterByCategory(
       widget.allFormulas,
       widget.categoryName,
     );
-    _selectedFormula = _filteredFormulas.isNotEmpty
-        ? _filteredFormulas[0]
-        : widget.allFormulas[0];
   }
 
   List<Formula> _filterByCategory(List<Formula> formulas, String category) {
@@ -47,24 +46,55 @@ class _PhysicsSolverPageState extends State<PhysicsSolverPage> {
     return filtered.isEmpty ? formulas : filtered;
   }
 
-  void _selectFormula(Formula f) {
+  /// Union of all variables across the current category's formulas.
+  List<String> get _categoryVariables {
+    final set = <String>{};
+    for (final f in _categoryFormulas) {
+      set.addAll(f.variables);
+    }
+    final list = set.toList();
+    // Prefer common single-letter variables first, then longer names.
+    list.sort((a, b) {
+      if (a.length != b.length) return a.length.compareTo(b.length);
+      return a.compareTo(b);
+    });
+    return list;
+  }
+
+  /// Full physics pool used for chaining across categories.
+  List<Formula> get _fullPhysicsPool => <Formula>[
+    ...FormulaDatabase.physicsFormulas,
+    ...HscPhysics1Database.hscPhysics1Formulas,
+    ...HscPhysics2Database.hscPhysics2Formulas,
+  ];
+
+  /// Looks up the unit for a variable from the full pool.
+  String? _unitFor(String variable) {
+    for (final f in _categoryFormulas) {
+      final u = f.units[variable];
+      if (u != null) return u;
+    }
+    for (final f in _fullPhysicsPool) {
+      final u = f.units[variable];
+      if (u != null) return u;
+    }
+    return null;
+  }
+
+  void _setTarget(String? newTarget) {
     setState(() {
-      _selectedFormula = f;
-      _values.clear();
-      _editingVariable = null;
+      _targetVariable = newTarget;
+      if (newTarget != null) {
+        _values.remove(newTarget);
+      }
     });
   }
 
-  String? get _targetVariable {
-    final unknowns = _selectedFormula.variables
-        .where((v) => (_values[v] ?? '').isEmpty)
-        .toList();
-    return unknowns.length == 1 ? unknowns.first : null;
-  }
-
-  bool get _canCalculate => _targetVariable != null;
-
   void _onChipTap(String variable) {
+    if (variable == _targetVariable) {
+      // Tapping the target chip just opens the "solve for" dropdown feel.
+      return;
+    }
     setState(() {
       _editingVariable = variable;
     });
@@ -108,33 +138,43 @@ class _PhysicsSolverPageState extends State<PhysicsSolverPage> {
     });
   }
 
+  bool get _canCalculate {
+    if (_targetVariable == null) return false;
+    return _values.entries.any(
+      (e) => e.key != _targetVariable && e.value.isNotEmpty,
+    );
+  }
+
   void _onCalculate() {
     final target = _targetVariable;
     if (target == null) return;
 
     final known = <String, double>{};
-    for (final v in _selectedFormula.variables) {
-      if (v != target) {
-        final raw = _values[v];
-        if (raw != null && raw.isNotEmpty) {
-          final parsed = double.tryParse(raw);
-          if (parsed != null) known[v] = parsed;
-        }
-      }
+    for (final entry in _values.entries) {
+      if (entry.key == target) continue;
+      if (entry.value.isEmpty) continue;
+      final parsed = double.tryParse(entry.value);
+      if (parsed != null) known[entry.key] = parsed;
     }
 
-    // Use multi-step chaining with the current category's formulas as the pool.
+    if (known.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Enter at least one known value.')),
+      );
+      return;
+    }
+
     final chain = SolverEngine().solveChained(
       targetVariable: target,
       knownValues: known,
-      formulaPool: _filteredFormulas,
+      formulaPool: _fullPhysicsPool,
     );
 
     if (chain == null || chain.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'Could not solve. Check your values or try another formula.',
+            'Could not solve. Try adding more known values or a different target.',
           ),
         ),
       );
@@ -149,6 +189,18 @@ class _PhysicsSolverPageState extends State<PhysicsSolverPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final allVars = _categoryVariables;
+    final target = _targetVariable;
+
+    // Variables with values entered (excluding target).
+    final knownVars = allVars
+        .where((v) => v != target && (_values[v] ?? '').isNotEmpty)
+        .toList();
+
+    // Variables without values (excluding target).
+    final unknownVars = allVars
+        .where((v) => v != target && (_values[v] ?? '').isEmpty)
+        .toList();
 
     return Scaffold(
       appBar: AppBar(title: Text(widget.categoryName), elevation: 0),
@@ -158,14 +210,32 @@ class _PhysicsSolverPageState extends State<PhysicsSolverPage> {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
               children: [
-                _buildFormulaCard(theme),
-                const SizedBox(height: 20),
-                _buildFormulaSelector(theme),
-                const SizedBox(height: 24),
-                _buildUnknownSection(theme),
-                const SizedBox(height: 20),
-                _buildKnownSection(theme),
-                const SizedBox(height: 24),
+                _sectionLabel(theme, 'SOLVE FOR'),
+                const SizedBox(height: 10),
+                _buildTargetDropdown(theme, allVars),
+                const SizedBox(height: 28),
+
+                if (knownVars.isNotEmpty) ...[
+                  _sectionLabel(theme, 'KNOWN VALUES'),
+                  const SizedBox(height: 12),
+                  ...knownVars.map((v) => _knownTile(theme, v)),
+                  const SizedBox(height: 24),
+                ],
+
+                if (unknownVars.isNotEmpty) ...[
+                  _sectionLabel(theme, 'TAP TO ENTER A VALUE'),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: unknownVars
+                        .map((v) => _emptyChip(theme, v))
+                        .toList(),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+
+                const SizedBox(height: 12),
                 _buildCalculateButton(theme),
               ],
             ),
@@ -174,7 +244,7 @@ class _PhysicsSolverPageState extends State<PhysicsSolverPage> {
             PhysicsKeypad(
               variableLabel: _niceLabel(_editingVariable!),
               currentValue: _values[_editingVariable!] ?? '',
-              unit: _selectedFormula.units[_editingVariable!],
+              unit: _unitFor(_editingVariable!),
               onKeyTap: _onKeyTap,
               onBackspace: _onBackspace,
               onClear: _onClear,
@@ -185,94 +255,73 @@ class _PhysicsSolverPageState extends State<PhysicsSolverPage> {
     );
   }
 
-  Widget _buildFormulaCard(ThemeData theme) {
+  Widget _sectionLabel(ThemeData theme, String text) {
+    return Text(
+      text,
+      style: TextStyle(
+        fontSize: 11,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 1.5,
+        color: theme.colorScheme.primary,
+      ),
+    );
+  }
+
+  Widget _buildTargetDropdown(ThemeData theme, List<String> allVars) {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 28),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: theme.colorScheme.primaryContainer,
-        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: theme.colorScheme.outlineVariant, width: 1.5),
+        borderRadius: BorderRadius.circular(14),
       ),
-      child: Center(
-        child: MathRenderer(formula: _selectedFormula.cleanLatex, fontSize: 28),
-      ),
-    );
-  }
-
-  Widget _buildFormulaSelector(ThemeData theme) {
-    return DropdownButton<Formula>(
-      value: _selectedFormula,
-      isExpanded: true,
-      underline: Container(height: 1, color: theme.colorScheme.outlineVariant),
-      onChanged: (f) {
-        if (f != null) _selectFormula(f);
-      },
-      items: _filteredFormulas
-          .map(
-            (f) => DropdownMenuItem(
-              value: f,
-              child: Text(
-                f.name,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 14),
-              ),
-            ),
-          )
-          .toList(),
-    );
-  }
-
-  Widget _buildUnknownSection(ThemeData theme) {
-    final unknowns = _selectedFormula.variables
-        .where((v) => (_values[v] ?? '').isEmpty)
-        .toList();
-
-    if (unknowns.isEmpty) return const SizedBox.shrink();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'UNKNOWN VARIABLES',
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.5,
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: _targetVariable,
+          isExpanded: true,
+          icon: Icon(
+            Icons.keyboard_arrow_down,
             color: theme.colorScheme.primary,
           ),
+          hint: Text(
+            'Select what you want to find',
+            style: TextStyle(
+              color: theme.colorScheme.onSurfaceVariant,
+              fontSize: 15,
+            ),
+          ),
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: theme.colorScheme.onSurface,
+          ),
+          items: allVars
+              .map(
+                (v) => DropdownMenuItem(value: v, child: Text(_niceLabel(v))),
+              )
+              .toList(),
+          onChanged: _setTarget,
         ),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: unknowns.map((v) => _unknownChip(theme, v)).toList(),
-        ),
-      ],
+      ),
     );
   }
 
-  Widget _unknownChip(ThemeData theme, String variable) {
-    final isTarget = _targetVariable == variable;
-    final borderColor = isTarget
-        ? theme.colorScheme.primary
-        : theme.colorScheme.outlineVariant;
-    final textColor = isTarget
-        ? theme.colorScheme.primary
-        : theme.colorScheme.onSurface;
-
+  Widget _emptyChip(ThemeData theme, String variable) {
     return InkWell(
       onTap: () => _onChipTap(variable),
       borderRadius: BorderRadius.circular(24),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
         decoration: BoxDecoration(
-          border: Border.all(color: borderColor, width: 1.5),
+          border: Border.all(
+            color: theme.colorScheme.outlineVariant,
+            width: 1.5,
+          ),
           borderRadius: BorderRadius.circular(24),
         ),
         child: Text(
           _niceLabel(variable),
           style: TextStyle(
-            color: textColor,
+            color: theme.colorScheme.onSurface,
             fontWeight: FontWeight.w600,
             fontSize: 14,
           ),
@@ -281,33 +330,8 @@ class _PhysicsSolverPageState extends State<PhysicsSolverPage> {
     );
   }
 
-  Widget _buildKnownSection(ThemeData theme) {
-    final known = _selectedFormula.variables
-        .where((v) => (_values[v] ?? '').isNotEmpty)
-        .toList();
-
-    if (known.isEmpty) return const SizedBox.shrink();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'KNOWN VALUES',
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.5,
-            color: theme.colorScheme.primary,
-          ),
-        ),
-        const SizedBox(height: 12),
-        ...known.map((v) => _knownTile(theme, v)),
-      ],
-    );
-  }
-
   Widget _knownTile(ThemeData theme, String variable) {
-    final unit = _selectedFormula.units[variable];
+    final unit = _unitFor(variable);
     final value = _values[variable] ?? '';
     final displayValue = unit != null ? '$value $unit' : value;
 
@@ -329,21 +353,22 @@ class _PhysicsSolverPageState extends State<PhysicsSolverPage> {
                   child: Text(
                     variable,
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: 12,
                       fontWeight: FontWeight.bold,
                       color: theme.colorScheme.onPrimary,
                     ),
                   ),
                 ),
                 const SizedBox(width: 14),
-                Text(
-                  displayValue,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
+                Expanded(
+                  child: Text(
+                    '${_niceLabel(variable)}  =  $displayValue',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
-                const Spacer(),
                 IconButton(
                   iconSize: 20,
                   icon: Icon(Icons.cancel, color: theme.colorScheme.outline),
