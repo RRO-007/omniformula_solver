@@ -55,7 +55,6 @@ class _PhysicsSolverPageState extends State<PhysicsSolverPage> {
     });
   }
 
-  /// The target is automatically the only variable without a value.
   String? get _targetVariable {
     final unknowns = _selectedFormula.variables
         .where((v) => (_values[v] ?? '').isEmpty)
@@ -75,7 +74,6 @@ class _PhysicsSolverPageState extends State<PhysicsSolverPage> {
     if (_editingVariable == null) return;
     setState(() {
       final current = _values[_editingVariable!] ?? '';
-      // Prevent multiple decimal points
       if (key == '.' && current.contains('.')) return;
       _values[_editingVariable!] = current + key;
     });
@@ -297,7 +295,7 @@ class _PhysicsSolverPageState extends State<PhysicsSolverPage> {
           ),
         ),
         const SizedBox(height: 12),
-        ...known.map((v) => _knownTile(theme, v)).toList(),
+        ...known.map((v) => _knownTile(theme, v)),
       ],
     );
   }
