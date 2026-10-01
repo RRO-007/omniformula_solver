@@ -32,14 +32,13 @@ class SolutionResult {
 }
 
 class SolverEngine {
-  /// Legacy solver that returns plain-text step strings.
+  /// Legacy solver returning plain-text steps (still used by chemistry/math).
   List<String> solve(
     Formula formula,
     String targetVariable,
     Map<String, double> knownValues,
   ) {
     final steps = <String>[];
-
     if (knownValues.containsKey(targetVariable)) {
       steps.add(
         "The variable $targetVariable is already known: "
@@ -57,13 +56,7 @@ class SolverEngine {
     steps.add("Step 1: Identify the unknown variable: $targetVariable");
     steps.add("Step 2: Rearrange the formula: $equationString");
 
-    String substituted = equationString;
-    final sorted = knownValues.entries.toList()
-      ..sort((a, b) => b.key.length.compareTo(a.key.length));
-    for (final entry in sorted) {
-      final regex = RegExp('\\b${RegExp.escape(entry.key)}\\b');
-      substituted = substituted.replaceAll(regex, entry.value.toString());
-    }
+    final substituted = _substitutePlain(equationString, knownValues);
     steps.add("Step 3: Substitute known values: $substituted");
 
     try {
@@ -77,7 +70,7 @@ class SolverEngine {
     return steps;
   }
 
-  /// Detailed solver returning a structured result for beautiful step-by-step UI.
+  /// Structured solver for the physics page's beautiful step-by-step UI.
   SolutionResult? solveDetailed(
     Formula formula,
     String targetVariable,
@@ -86,37 +79,24 @@ class SolverEngine {
     final equationString = formula.equations[targetVariable];
     if (equationString == null) return null;
 
-    // Build the evaluated expression with explicit parentheses.
-    String substitutedExpr = equationString;
-    final sorted = knownValues.entries.toList()
-      ..sort((a, b) => b.key.length.compareTo(a.key.length));
-    for (final entry in sorted) {
-      final regex = RegExp('\\b${RegExp.escape(entry.key)}\\b');
-      substitutedExpr = substitutedExpr.replaceAll(regex, '(${entry.value})');
-    }
+    // 1. Build a numeric expression with explicit parentheses for evaluation.
+    final numericExpr = _substitutePlain(equationString, knownValues);
 
+    // 2. Evaluate it.
     double result;
     try {
       final p = GrammarParser();
-      final exp = p.parse(substitutedExpr);
+      final exp = p.parse(numericExpr);
       result = exp.evaluate(EvaluationType.REAL, ContextModel());
-    } catch (e) {
+    } catch (_) {
       return null;
     }
 
-    // Build LaTeX strings for the step-by-step view.
+    // 3. Build the two display strings (LaTeX).
     final formulaLatex = formula.cleanLatex;
+    final substitutedLatex = _substituteLatex(formulaLatex, knownValues);
 
-    // Substituted: replace each known variable with "(value)" in the formula latex.
-    String substitutedLatex = formulaLatex;
-    for (final entry in sorted) {
-      final regex = RegExp('\\b${RegExp.escape(entry.key)}\\b');
-      substitutedLatex = substitutedLatex.replaceAll(
-        regex,
-        '(${_fmt(entry.value)})',
-      );
-    }
-
+    // 4. Format the result.
     final rounded = result == result.roundToDouble()
         ? result.toInt().toString()
         : result.toStringAsFixed(2);
@@ -131,6 +111,55 @@ class SolverEngine {
       targetVariable: targetVariable,
       targetVariableName: _niceName(targetVariable),
       unit: formula.units[targetVariable],
+    );
+  }
+
+  /// Plain-text substitution for `math_expressions` evaluation.
+  String _substitutePlain(String source, Map<String, double> values) {
+    if (values.isEmpty) return source;
+    final keys = values.keys.toList()
+      ..sort((a, b) => b.length.compareTo(a.length));
+    final pattern = RegExp(
+      r'(?<![A-Za-z_])(' +
+          keys.map(RegExp.escape).join('|') +
+          r')(?![A-Za-z_])',
+    );
+    return source.splitMapJoin(
+      pattern,
+      onMatch: (m) {
+        final key = m[0]!;
+        final v = values[key]!;
+        return '(${_fmt(v)})';
+      },
+      onNonMatch: (s) => s,
+    );
+  }
+
+  /// LaTeX-safe substitution. Handles commands like `\cdot`, `\times`, `\sqrt{}`
+  /// and only replaces variable names that are standalone tokens.
+  String _substituteLatex(String source, Map<String, double> values) {
+    if (values.isEmpty) return source;
+    final keys = values.keys.toList()
+      ..sort((a, b) => b.length.compareTo(a.length));
+
+    // A variable is only replaced when:
+    //   - the char before is not a backslash, letter, or underscore
+    //   - the char after is not a letter or underscore
+    // This prevents accidental matches inside LaTeX commands like `\cdot`.
+    final pattern = RegExp(
+      r'(?<![\\A-Za-z_])(' +
+          keys.map(RegExp.escape).join('|') +
+          r')(?![A-Za-z_])',
+    );
+
+    return source.splitMapJoin(
+      pattern,
+      onMatch: (m) {
+        final key = m[0]!;
+        final v = values[key]!;
+        return '(${_fmt(v)})';
+      },
+      onNonMatch: (s) => s,
     );
   }
 
@@ -157,6 +186,9 @@ class SolverEngine {
       'h': 'height',
       'J': 'impulse',
       'd': 'distance',
+      'r': 'radius',
+      'm1': 'mass 1',
+      'm2': 'mass 2',
       'V': 'voltage',
       'I': 'current',
       'R': 'resistance',

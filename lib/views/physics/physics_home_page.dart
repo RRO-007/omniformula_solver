@@ -51,7 +51,7 @@ class PhysicsHomePage extends StatelessWidget {
       body: ListView.separated(
         padding: const EdgeInsets.symmetric(vertical: 8),
         itemCount: displayCats.length,
-        separatorBuilder: (_, __) => Divider(
+        separatorBuilder: (_, _) => Divider(
           height: 1,
           indent: 76,
           color: Theme.of(context).dividerColor.withValues(alpha: 0.3),
