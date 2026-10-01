@@ -32,7 +32,7 @@ class SolutionResult {
 }
 
 class SolverEngine {
-  /// Legacy solver returning plain-text steps (still used by chemistry/math).
+  /// Legacy plain-text solver used by chemistry and math.
   List<String> solve(
     Formula formula,
     String targetVariable,
@@ -46,13 +46,11 @@ class SolverEngine {
       );
       return steps;
     }
-
     final equationString = formula.equations[targetVariable];
     if (equationString == null) {
       steps.add("No equation found for $targetVariable.");
       return steps;
     }
-
     steps.add("Step 1: Identify the unknown variable: $targetVariable");
     steps.add("Step 2: Rearrange the formula: $equationString");
 
@@ -70,7 +68,7 @@ class SolverEngine {
     return steps;
   }
 
-  /// Structured solver for the physics page's beautiful step-by-step UI.
+  /// Single-formula structured solution (kept for backward compat).
   SolutionResult? solveDetailed(
     Formula formula,
     String targetVariable,
@@ -79,10 +77,8 @@ class SolverEngine {
     final equationString = formula.equations[targetVariable];
     if (equationString == null) return null;
 
-    // 1. Build a numeric expression with explicit parentheses for evaluation.
     final numericExpr = _substitutePlain(equationString, knownValues);
 
-    // 2. Evaluate it.
     double result;
     try {
       final p = GrammarParser();
@@ -92,11 +88,9 @@ class SolverEngine {
       return null;
     }
 
-    // 3. Build the two display strings (LaTeX).
     final formulaLatex = formula.cleanLatex;
     final substitutedLatex = _substituteLatex(formulaLatex, knownValues);
 
-    // 4. Format the result.
     final rounded = result == result.roundToDouble()
         ? result.toInt().toString()
         : result.toStringAsFixed(2);
@@ -114,7 +108,119 @@ class SolverEngine {
     );
   }
 
-  /// Plain-text substitution for `math_expressions` evaluation.
+  /// NEW: multi-step solver.
+  /// Recursively solves intermediate variables if needed.
+  /// Returns a chain of steps ending with the requested variable.
+  List<SolutionResult>? solveChained({
+    required String targetVariable,
+    required Map<String, double> knownValues,
+    required List<Formula> formulaPool,
+    int maxDepth = 5,
+  }) {
+    return _chainRecursive(
+      target: targetVariable,
+      known: Map<String, double>.from(knownValues),
+      pool: formulaPool,
+      visiting: <String>{},
+      depth: 0,
+      maxDepth: maxDepth,
+    );
+  }
+
+  List<SolutionResult>? _chainRecursive({
+    required String target,
+    required Map<String, double> known,
+    required List<Formula> pool,
+    required Set<String> visiting,
+    required int depth,
+    required int maxDepth,
+  }) {
+    // If already known, nothing to solve.
+    if (known.containsKey(target)) return <SolutionResult>[];
+
+    // Cycle / depth protection.
+    if (visiting.contains(target) || depth >= maxDepth) return null;
+
+    // Candidates: formulas in the pool that can produce `target`.
+    final candidates = pool
+        .where(
+          (f) =>
+              f.variables.contains(target) && f.equations.containsKey(target),
+        )
+        .toList();
+
+    if (candidates.isEmpty) return null;
+
+    // Prefer formulas with the fewest unknown variables.
+    candidates.sort((a, b) {
+      final aUnknown = a.variables
+          .where((v) => v != target && !known.containsKey(v))
+          .length;
+      final bUnknown = b.variables
+          .where((v) => v != target && !known.containsKey(v))
+          .length;
+      return aUnknown.compareTo(bUnknown);
+    });
+
+    visiting.add(target);
+
+    for (final formula in candidates) {
+      final needed = formula.variables.where((v) => v != target).toList();
+      final localKnown = Map<String, double>.from(known);
+      final chain = <SolutionResult>[];
+      var failed = false;
+
+      for (final v in needed) {
+        if (localKnown.containsKey(v)) continue;
+
+        // Recurse to solve this intermediate variable.
+        final sub = _chainRecursive(
+          target: v,
+          known: localKnown,
+          pool: pool,
+          visiting: visiting,
+          depth: depth + 1,
+          maxDepth: maxDepth,
+        );
+
+        if (sub == null) {
+          failed = true;
+          break;
+        }
+
+        chain.addAll(sub);
+
+        // If the sub-chain produced a value for v, use it. Otherwise,
+        // the variable couldn't be resolved → abandon this formula.
+        final last = sub.isNotEmpty ? sub.last : null;
+        if (last != null && last.targetVariable == v) {
+          localKnown[v] = last.value;
+        } else if (!localKnown.containsKey(v)) {
+          failed = true;
+          break;
+        }
+      }
+
+      if (failed) continue;
+
+      // Now solve the top-level formula.
+      final result = solveDetailed(formula, target, localKnown);
+      if (result == null) continue;
+
+      chain.add(result);
+
+      visiting.remove(target);
+      return chain;
+    }
+
+    visiting.remove(target);
+    return null;
+  }
+
+  // -------------------------------------------------------------------------
+  // Substitution helpers
+  // -------------------------------------------------------------------------
+
   String _substitutePlain(String source, Map<String, double> values) {
     if (values.isEmpty) return source;
     final keys = values.keys.toList()
@@ -135,17 +241,11 @@ class SolverEngine {
     );
   }
 
-  /// LaTeX-safe substitution. Handles commands like `\cdot`, `\times`, `\sqrt{}`
-  /// and only replaces variable names that are standalone tokens.
   String _substituteLatex(String source, Map<String, double> values) {
     if (values.isEmpty) return source;
     final keys = values.keys.toList()
       ..sort((a, b) => b.length.compareTo(a.length));
 
-    // A variable is only replaced when:
-    //   - the char before is not a backslash, letter, or underscore
-    //   - the char after is not a letter or underscore
-    // This prevents accidental matches inside LaTeX commands like `\cdot`.
     final pattern = RegExp(
       r'(?<![\\A-Za-z_])(' +
           keys.map(RegExp.escape).join('|') +

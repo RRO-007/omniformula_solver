@@ -123,20 +123,26 @@ class _PhysicsSolverPageState extends State<PhysicsSolverPage> {
       }
     }
 
-    final result = SolverEngine().solveDetailed(
-      _selectedFormula,
-      target,
-      known,
+    // Use multi-step chaining with the current category's formulas as the pool.
+    final chain = SolverEngine().solveChained(
+      targetVariable: target,
+      knownValues: known,
+      formulaPool: _filteredFormulas,
     );
-    if (result == null) {
+
+    if (chain == null || chain.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not solve. Check your values.')),
+        const SnackBar(
+          content: Text(
+            'Could not solve. Check your values or try another formula.',
+          ),
+        ),
       );
       return;
     }
 
     Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => PhysicsSolutionPage(result: result)),
+      MaterialPageRoute(builder: (_) => PhysicsSolutionPage(steps: chain)),
     );
   }
 
