@@ -46,27 +46,27 @@ class _PhysicsSolverPageState extends State<PhysicsSolverPage> {
     return filtered.isEmpty ? formulas : filtered;
   }
 
-  /// Union of all variables across the current category's formulas.
-  List<String> get _categoryVariables {
+  /// Full physics pool used for chaining.
+  List<Formula> get _fullPhysicsPool => <Formula>[
+    ...FormulaDatabase.physicsFormulas,
+    ...HscPhysics1Database.hscPhysics1Formulas,
+    ...HscPhysics2Database.hscPhysics2Formulas,
+  ];
+
+  /// All variables available across the FULL physics pool, so the user
+  /// can pick any target (e.g., KE while in the Dynamics category).
+  List<String> get _allPhysicsVariables {
     final set = <String>{};
-    for (final f in _categoryFormulas) {
+    for (final f in _fullPhysicsPool) {
       set.addAll(f.variables);
     }
     final list = set.toList();
-    // Prefer common single-letter variables first, then longer names.
     list.sort((a, b) {
       if (a.length != b.length) return a.length.compareTo(b.length);
       return a.compareTo(b);
     });
     return list;
   }
-
-  /// Full physics pool used for chaining across categories.
-  List<Formula> get _fullPhysicsPool => <Formula>[
-    ...FormulaDatabase.physicsFormulas,
-    ...HscPhysics1Database.hscPhysics1Formulas,
-    ...HscPhysics2Database.hscPhysics2Formulas,
-  ];
 
   /// Looks up the unit for a variable from the full pool.
   String? _unitFor(String variable) {
@@ -91,10 +91,7 @@ class _PhysicsSolverPageState extends State<PhysicsSolverPage> {
   }
 
   void _onChipTap(String variable) {
-    if (variable == _targetVariable) {
-      // Tapping the target chip just opens the "solve for" dropdown feel.
-      return;
-    }
+    if (variable == _targetVariable) return;
     setState(() {
       _editingVariable = variable;
     });
@@ -189,15 +186,13 @@ class _PhysicsSolverPageState extends State<PhysicsSolverPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final allVars = _categoryVariables;
+    final allVars = _allPhysicsVariables;
     final target = _targetVariable;
 
-    // Variables with values entered (excluding target).
     final knownVars = allVars
         .where((v) => v != target && (_values[v] ?? '').isNotEmpty)
         .toList();
 
-    // Variables without values (excluding target).
     final unknownVars = allVars
         .where((v) => v != target && (_values[v] ?? '').isEmpty)
         .toList();

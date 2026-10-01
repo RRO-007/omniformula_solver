@@ -71,6 +71,15 @@ class FormulaDatabase {
       units: {'F': 'N', 'm': 'kg', 'a': 'm/s²'},
     ),
     Formula(
+      id: 'impulse_momentum',
+      name: 'Impulse-Momentum: p = F·t',
+      variables: ['p', 'F', 't'],
+      category: 'Dynamics',
+      latex: 'p = F · t',
+      equations: {'p': 'F*t', 'F': 'p/t', 't': 'p/F'},
+      units: {'p': 'kg·m/s', 'F': 'N', 't': 's'},
+    ),
+    Formula(
       id: 'momentum',
       name: 'Momentum: p = mv',
       variables: ['p', 'm', 'v'],
@@ -78,15 +87,6 @@ class FormulaDatabase {
       latex: 'p = m · v',
       equations: {'p': 'm*v', 'm': 'p/v', 'v': 'p/m'},
       units: {'p': 'kg·m/s', 'm': 'kg', 'v': 'm/s'},
-    ),
-    Formula(
-      id: 'impulse',
-      name: 'Impulse: J = F·t',
-      variables: ['J', 'F', 't'],
-      category: 'Dynamics',
-      latex: 'J = F · t',
-      equations: {'J': 'F*t', 'F': 'J/t', 't': 'J/F'},
-      units: {'J': 'N·s', 'F': 'N', 't': 's'},
     ),
     Formula(
       id: 'weight',
@@ -143,6 +143,15 @@ class FormulaDatabase {
       latex: 'P = \\frac{W}{t}',
       equations: {'P': 'W/t', 'W': 'P*t', 't': 'W/P'},
       units: {'P': 'W', 'W': 'J', 't': 's'},
+    ),
+    Formula(
+      id: 'power_force_velocity',
+      name: 'Power-Force: P = F·v',
+      variables: ['P', 'F', 'v'],
+      category: 'Energy',
+      latex: 'P = F · v',
+      equations: {'P': 'F*v', 'F': 'P/v', 'v': 'P/F'},
+      units: {'P': 'W', 'F': 'N', 'v': 'm/s'},
     ),
 
     // ============ GRAVITATION ============
