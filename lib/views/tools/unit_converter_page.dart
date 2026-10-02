@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../models/tools/constant_database.dart';
 import '../../models/search/search_helper.dart';
 
@@ -26,11 +27,7 @@ class _ScientificToolsPageState extends State<ScientificToolsPage> {
           ),
         ),
         body: const TabBarView(
-          children: [
-            UnitConverterTab(),
-            ConstantsTab(),
-            GlobalSearchTab(),
-          ],
+          children: [UnitConverterTab(), ConstantsTab(), GlobalSearchTab()],
         ),
       ),
     );
@@ -53,31 +50,58 @@ class _UnitConverterTabState extends State<UnitConverterTab> {
 
   final Map<String, Map<String, double>> _conversionFactors = {
     'Length': {
-      'Meters': 1.0, 'Kilometers': 1000.0, 'Centimeters': 0.01,
-      'Millimeters': 0.001, 'Miles': 1609.34, 'Yards': 0.9144,
-      'Feet': 0.3048, 'Inches': 0.0254, 'Nautical Miles': 1852.0,
+      'Meters': 1.0,
+      'Kilometers': 1000.0,
+      'Centimeters': 0.01,
+      'Millimeters': 0.001,
+      'Miles': 1609.34,
+      'Yards': 0.9144,
+      'Feet': 0.3048,
+      'Inches': 0.0254,
+      'Nautical Miles': 1852.0,
     },
     'Mass': {
-      'Kilograms': 1000.0, 'Grams': 1.0, 'Milligrams': 0.001,
-      'Pounds': 453.592, 'Ounces': 28.3495, 'Tons (metric)': 1000000.0,
+      'Kilograms': 1000.0,
+      'Grams': 1.0,
+      'Milligrams': 0.001,
+      'Pounds': 453.592,
+      'Ounces': 28.3495,
+      'Tons (metric)': 1000000.0,
     },
     'Time': {
-      'Seconds': 1.0, 'Milliseconds': 0.001, 'Minutes': 60.0,
-      'Hours': 3600.0, 'Days': 86400.0, 'Weeks': 604800.0, 'Years': 31536000.0,
+      'Seconds': 1.0,
+      'Milliseconds': 0.001,
+      'Minutes': 60.0,
+      'Hours': 3600.0,
+      'Days': 86400.0,
+      'Weeks': 604800.0,
+      'Years': 31536000.0,
     },
     'Volume': {
-      'Liters': 1.0, 'Milliliters': 0.001, 'Cubic Meters': 1000.0,
-      'Cubic Centimeters': 0.001, 'Gallons (US)': 3.78541,
-      'Quarts (US)': 0.946353, 'Cups': 0.236588,
+      'Liters': 1.0,
+      'Milliliters': 0.001,
+      'Cubic Meters': 1000.0,
+      'Cubic Centimeters': 0.001,
+      'Gallons (US)': 3.78541,
+      'Quarts (US)': 0.946353,
+      'Cups': 0.236588,
     },
     'Energy': {
-      'Joules': 1.0, 'Kilojoules': 1000.0, 'Calories': 4.184,
-      'Kilocalories': 4184.0, 'Electronvolts': 1.602176634e-19,
-      'Kilowatt-hours': 3600000.0, 'BTU': 1055.06,
+      'Joules': 1.0,
+      'Kilojoules': 1000.0,
+      'Calories': 4.184,
+      'Kilocalories': 4184.0,
+      'Electronvolts': 1.602176634e-19,
+      'Kilowatt-hours': 3600000.0,
+      'BTU': 1055.06,
     },
     'Pressure': {
-      'Pascals': 1.0, 'Kilopascals': 1000.0, 'Bars': 100000.0,
-      'Atmospheres': 101325.0, 'PSI': 6894.76, 'mmHg': 133.322,
+      'Pascals': 1.0,
+      'Kilopascals': 1000.0,
+      'Bars': 100000.0,
+      'Atmospheres': 101325.0,
+      'PSI': 6894.76,
+      'mmHg': 133.322,
     },
     'Temperature': {'Celsius': 1.0, 'Fahrenheit': 1.0, 'Kelvin': 1.0},
   };
@@ -103,16 +127,30 @@ class _UnitConverterTabState extends State<UnitConverterTab> {
     if (_conversionType == 'Temperature') {
       double celsius;
       switch (_fromUnit) {
-        case 'Celsius': celsius = input; break;
-        case 'Fahrenheit': celsius = (input - 32) * 5 / 9; break;
-        case 'Kelvin': celsius = input - 273.15; break;
-        default: celsius = input;
+        case 'Celsius':
+          celsius = input;
+          break;
+        case 'Fahrenheit':
+          celsius = (input - 32) * 5 / 9;
+          break;
+        case 'Kelvin':
+          celsius = input - 273.15;
+          break;
+        default:
+          celsius = input;
       }
       switch (_toUnit) {
-        case 'Celsius': output = celsius; break;
-        case 'Fahrenheit': output = (celsius * 9 / 5) + 32; break;
-        case 'Kelvin': output = celsius + 273.15; break;
-        default: output = celsius;
+        case 'Celsius':
+          output = celsius;
+          break;
+        case 'Fahrenheit':
+          output = (celsius * 9 / 5) + 32;
+          break;
+        case 'Kelvin':
+          output = celsius + 273.15;
+          break;
+        default:
+          output = celsius;
       }
       formulaText = 'Formula: Convert $input°$_fromUnit to $_toUnit';
     } else {
@@ -123,7 +161,8 @@ class _UnitConverterTabState extends State<UnitConverterTab> {
     }
 
     setState(() {
-      _resultText = '$input $_fromUnit = ${output.toStringAsFixed(6)} $_toUnit\n\n$formulaText';
+      _resultText =
+          '$input $_fromUnit = ${output.toStringAsFixed(6)} $_toUnit\n\n$formulaText';
     });
   }
 
@@ -140,30 +179,43 @@ class _UnitConverterTabState extends State<UnitConverterTab> {
               value: _conversionType,
               isExpanded: true,
               onChanged: (v) {
-                setState(() { _conversionType = v!; _resetUnits(); });
+                setState(() {
+                  _conversionType = v!;
+                  _resetUnits();
+                });
               },
-              items: _conversionFactors.keys.map((t) =>
-                  DropdownMenuItem(value: t, child: Text(t))).toList(),
+              items: _conversionFactors.keys
+                  .map((t) => DropdownMenuItem(value: t, child: Text(t)))
+                  .toList(),
             ),
             const SizedBox(height: 20),
             TextField(
               controller: _inputController,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+                signed: true,
+              ),
               decoration: const InputDecoration(labelText: 'Enter value'),
             ),
             const SizedBox(height: 20),
             const Text("From:"),
             DropdownButton<String>(
-              value: _fromUnit, isExpanded: true,
+              value: _fromUnit,
+              isExpanded: true,
               onChanged: (v) => setState(() => _fromUnit = v!),
-              items: units.map((u) => DropdownMenuItem(value: u, child: Text(u))).toList(),
+              items: units
+                  .map((u) => DropdownMenuItem(value: u, child: Text(u)))
+                  .toList(),
             ),
             const SizedBox(height: 20),
             const Text("To:"),
             DropdownButton<String>(
-              value: _toUnit, isExpanded: true,
+              value: _toUnit,
+              isExpanded: true,
               onChanged: (v) => setState(() => _toUnit = v!),
-              items: units.map((u) => DropdownMenuItem(value: u, child: Text(u))).toList(),
+              items: units
+                  .map((u) => DropdownMenuItem(value: u, child: Text(u)))
+                  .toList(),
             ),
             const SizedBox(height: 20),
             ElevatedButton(onPressed: _convert, child: const Text('Convert')),
@@ -175,7 +227,13 @@ class _UnitConverterTabState extends State<UnitConverterTab> {
                   color: Theme.of(context).colorScheme.primaryContainer,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Text(_resultText, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                child: Text(
+                  _resultText,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ),
           ],
         ),
@@ -198,7 +256,7 @@ class _ConstantsTabState extends State<ConstantsTab> {
   Widget build(BuildContext context) {
     final filtered = ConstantDatabase.constants.where((c) {
       return c.name.toLowerCase().contains(_query.toLowerCase()) ||
-             c.symbol.toLowerCase().contains(_query.toLowerCase());
+          c.symbol.toLowerCase().contains(_query.toLowerCase());
     }).toList();
 
     return Column(
@@ -222,7 +280,13 @@ class _ConstantsTabState extends State<ConstantsTab> {
                 margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                 child: ListTile(
                   leading: CircleAvatar(
-                    child: Text(c.symbol, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                    child: Text(
+                      c.symbol,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                   title: Text(c.name),
                   subtitle: Text('${c.value} ${c.unit}'),
@@ -256,11 +320,16 @@ class _GlobalSearchTabState extends State<GlobalSearchTab> {
 
   Color _categoryColor(String cat) {
     switch (cat) {
-      case 'Physics': return Colors.green;
-      case 'Math': return Colors.blue;
-      case 'Chemistry': return Colors.orange;
-      case 'Constant': return Colors.purple;
-      default: return Colors.grey;
+      case 'Physics':
+        return Colors.green;
+      case 'Math':
+        return Colors.blue;
+      case 'Chemistry':
+        return Colors.orange;
+      case 'Constant':
+        return Colors.purple;
+      default:
+        return Colors.grey;
     }
   }
 
@@ -282,23 +351,32 @@ class _GlobalSearchTabState extends State<GlobalSearchTab> {
           child: _query.isEmpty
               ? const Center(child: Text('Start typing to search...'))
               : _results.isEmpty
-                  ? const Center(child: Text('No results found.'))
-                  : ListView.builder(
-                      itemCount: _results.length,
-                      itemBuilder: (context, index) {
-                        final r = _results[index];
-                        return Card(
-                          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                          child: ListTile(
-                            leading: Chip(
-                              label: Text(r.category, style: const TextStyle(color: Colors.white, fontSize: 12)),
-                              backgroundColor: _categoryColor(r.category),
+              ? const Center(child: Text('No results found.'))
+              : ListView.builder(
+                  itemCount: _results.length,
+                  itemBuilder: (context, index) {
+                    final r = _results[index];
+                    return Card(
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 6,
+                      ),
+                      child: ListTile(
+                        leading: Chip(
+                          label: Text(
+                            r.category,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
                             ),
-                            title: Text(r.name),
                           ),
-                        );
-                      },
-                    ),
+                          backgroundColor: _categoryColor(r.category),
+                        ),
+                        title: Text(r.name),
+                      ),
+                    );
+                  },
+                ),
         ),
       ],
     );

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../models/chemistry/element.dart';
 import '../../models/chemistry/element_database.dart';
 
@@ -8,14 +9,22 @@ class PeriodicTablePage extends StatelessWidget {
   // A helper function to give each category a unique color
   Color _getCategoryColor(String category) {
     switch (category) {
-      case 'Nonmetal': return Colors.green;
-      case 'Noble Gas': return Colors.purple;
-      case 'Alkali Metal': return Colors.red;
-      case 'Alkaline Earth': return Colors.orange;
-      case 'Metalloid': return Colors.teal;
-      case 'Halogen': return Colors.blue;
-      case 'Post-transition Metal': return Colors.brown;
-      default: return Colors.grey;
+      case 'Nonmetal':
+        return Colors.green;
+      case 'Noble Gas':
+        return Colors.purple;
+      case 'Alkali Metal':
+        return Colors.red;
+      case 'Alkaline Earth':
+        return Colors.orange;
+      case 'Metalloid':
+        return Colors.teal;
+      case 'Halogen':
+        return Colors.blue;
+      case 'Post-transition Metal':
+        return Colors.brown;
+      default:
+        return Colors.grey;
     }
   }
 
@@ -33,7 +42,9 @@ class PeriodicTablePage extends StatelessWidget {
                 Text('Atomic Mass: ${element.atomicMass} u'),
                 Text('Category: ${element.category}'),
                 Text('State at Room Temp: ${element.state}'),
-                Text('Electron Configuration: ${element.electronConfiguration}'),
+                Text(
+                  'Electron Configuration: ${element.electronConfiguration}',
+                ),
                 Text('Electronegativity: ${element.electronegativity}'),
               ],
             ),
@@ -55,7 +66,11 @@ class PeriodicTablePage extends StatelessWidget {
   Widget build(BuildContext context) {
     // Calculate how many columns we can fit based on screen width
     final width = MediaQuery.of(context).size.width;
-    int crossAxisCount = width > 1200 ? 10 : width > 800 ? 8 : 5;
+    int crossAxisCount = width > 1200
+        ? 10
+        : width > 800
+        ? 8
+        : 5;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Periodic Table')),
@@ -75,7 +90,8 @@ class PeriodicTablePage extends StatelessWidget {
               onTap: () => _showElementDetails(context, element),
               child: Container(
                 decoration: BoxDecoration(
-                  color: _getCategoryColor(element.category).withValues(alpha: 0.8),
+                  color: _getCategoryColor(element.category)
+                      .withValues(alpha: 0.8),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Column(
@@ -83,7 +99,10 @@ class PeriodicTablePage extends StatelessWidget {
                   children: [
                     Text(
                       '${element.atomicNumber}',
-                      style: const TextStyle(color: Colors.white70, fontSize: 12),
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 12,
+                      ),
                     ),
                     Text(
                       element.symbol,
@@ -95,7 +114,10 @@ class PeriodicTablePage extends StatelessWidget {
                     ),
                     Text(
                       element.name,
-                      style: const TextStyle(color: Colors.white70, fontSize: 10),
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 10,
+                      ),
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],
